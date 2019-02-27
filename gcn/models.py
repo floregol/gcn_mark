@@ -29,6 +29,8 @@ class Model(object):
 
         self.loss = 0
         self.accuracy = 0
+        self.softmax_ouput = None
+
         self.optimizer = None
         self.opt_op = None
 
@@ -54,7 +56,7 @@ class Model(object):
         # Build metrics
         self._loss()
         self._accuracy()
-
+        self.predict()
         self.opt_op = self.optimizer.minimize(self.loss)
 
     def predict(self):
@@ -138,7 +140,7 @@ class GCN(Model):
         # self.input_dim = self.inputs.get_shape().as_list()[1]  # To be supported in future Tensorflow versions
         self.output_dim = placeholders['labels'].get_shape().as_list()[1]
         self.placeholders = placeholders
-
+        self.softmax_ouput = None
         self.optimizer = tf.train.AdamOptimizer(learning_rate=FLAGS.learning_rate)
 
         self.build()
@@ -174,4 +176,5 @@ class GCN(Model):
                                             logging=self.logging))
 
     def predict(self):
-        return tf.nn.softmax(self.outputs)
+        self.softmax_ouput = tf.nn.softmax(self.outputs)
+        return self.softmax_ouput

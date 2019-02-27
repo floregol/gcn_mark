@@ -87,7 +87,7 @@ def load_data(dataset_str):
     y_val[val_mask, :] = labels[val_mask, :]
     y_test[test_mask, :] = labels[test_mask, :]
 
-    return adj, features, y_train, y_val, y_test, train_mask, val_mask, test_mask
+    return adj, features, y_train, y_val, y_test, train_mask, val_mask, test_mask, labels
 
 
 def sparse_to_tuple(sparse_mx):
@@ -116,7 +116,7 @@ def preprocess_features(features):
     r_inv[np.isinf(r_inv)] = 0.
     r_mat_inv = sp.diags(r_inv)
     features = r_mat_inv.dot(features)
-    return sparse_to_tuple(features)
+    return features
 
 
 def normalize_adj(adj):

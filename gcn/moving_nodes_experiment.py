@@ -9,6 +9,7 @@ from scipy import sparse
 from train import get_trained_gcn
 from copy import copy, deepcopy
 from plotting_results import plot_softmax_output
+import pickle as pk
 """
 
  Moving the nodes around experiment
@@ -16,7 +17,7 @@ from plotting_results import plot_softmax_output
 """
 # Train the GCN
 sess, FLAGS, softmax = get_trained_gcn()
-
+result_folder = "results"
 # Get features and labels
 _, initial_features, _, _, _, train_mask, _, _, labels = load_data(FLAGS.dataset)
 train_index = np.argwhere(train_mask).flatten()
@@ -27,18 +28,19 @@ number_nodes = feature_matrix.shape[0]
 number_labels = labels.shape[1]
 
 # Experiment parameters.
-NUM_MOVED_NODES = 5
+NUM_MOVED_NODES = 50
 list_moved_node = random.sample(list(train_index), NUM_MOVED_NODES)
-list_new_posititons = random.sample(range(number_nodes), 200)
-#list_new_posititons = range(number_nodes)
-
+#list_new_posititons = random.sample(range(number_nodes), 10)
+list_new_posititons = range(number_nodes)
+j = 0
 for node_index in list_moved_node:  # TODO in parrallel copy features matrix
-
+    print(str(j) + "/" + str(len((list_moved_node))))
+    j += 1
     node_features = deepcopy(feature_matrix[node_index])
     start_time = time.time()
 
     node_true_label = int(np.argwhere(labels[node_index]))
-    print("Moving node " + str(node_index) + " with label " + str(node_true_label))
+    #print("Moving node " + str(node_index) + " with label " + str(node_true_label))
 
     # To store results
     softmax_output_list = np.zeros((len(list_new_posititons), number_labels))
@@ -60,12 +62,18 @@ for node_index in list_moved_node:  # TODO in parrallel copy features matrix
 
         softmax_output_list[i] = softmax_output_of_node  # Store results
         i += 1
-        print("put at " + str(replaced_node_label) + " = " + str(np.argmax(softmax_output_of_node)))
+        # print("put at " + str(replaced_node_label) + " = " + str(np.argmax(softmax_output_of_node)))
 
         feature_matrix[new_spot] = saved_features  # undo changes on the feature matrix
 
-    # Create plot for this node
-    plot_softmax_output(node_index, node_true_label, softmax_output_list, label_list)
+    # Store data to create plots
+    dict_output = {
+        "node": node_index,
+        "node_label": node_true_label,
+        "softmax": softmax_output_list,
+        "label_list": label_list
+    }
+    pk.dump(dict_output, open(os.path.join(result_folder, "node_" + str(node_index) + ".pk"), 'wb'))
 
     end_time = time.time()
     seconds_elapsed = end_time - start_time

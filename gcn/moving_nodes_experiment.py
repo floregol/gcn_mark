@@ -29,7 +29,7 @@ number_labels = labels.shape[1]
 # Experiment parameters.
 NUM_MOVED_NODES = 5
 list_moved_node = random.sample(list(train_index), NUM_MOVED_NODES)
-list_new_posititons = random.sample(range(number_nodes), NUM_MOVED_NODES)
+list_new_posititons = random.sample(range(number_nodes), 200)
 #list_new_posititons = range(number_nodes)
 
 for node_index in list_moved_node:  # TODO in parrallel copy features matrix

@@ -2,10 +2,10 @@ import matplotlib.pyplot as plt
 import pickle as pk
 #plot_softmax_output(node_index, node_true_label, softmax_output_list, label_list)
 
-with open("results/node_83.pk", 'rb') as f:
-    stats_dict = pk.load(f, encoding='latin1')
+#with open("results/node_83.pk", 'rb') as f:
+#    stats_dict = pk.load(f, encoding='latin1')
 
-print(stats_dict)
+#print(stats_dict)
 # def plot_softmax_output(node_index, node_true_label, softmax_output_list, label_list):
 #     x = range(softmax_output_list.shape[1])
 #     print(x)

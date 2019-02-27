@@ -8,7 +8,6 @@ import os
 from scipy import sparse
 from train import get_trained_gcn
 from copy import copy, deepcopy
-from plotting_results import plot_softmax_output
 import pickle as pk
 """
 

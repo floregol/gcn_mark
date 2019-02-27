@@ -9,8 +9,9 @@ from models import GCN, MLP
 import os
 from scipy import sparse
 
+
 def get_trained_gcn():
-    os.environ['TF_CPP_MIN_LOG_LEVEL'] = '6' 
+    os.environ['TF_CPP_MIN_LOG_LEVEL'] = '6'
     # Set random seed
     seed = 123
     np.random.seed(seed)
@@ -58,7 +59,8 @@ def get_trained_gcn():
         'labels': tf.placeholder(tf.float32, shape=(None, y_train.shape[1])),
         'labels_mask': tf.placeholder(tf.int32),
         'dropout': tf.placeholder_with_default(0., shape=()),
-        'num_features_nonzero': tf.placeholder(tf.int32)  # helper variable for sparse dropout
+        'num_features_nonzero':
+            tf.placeholder(tf.int32)  # helper variable for sparse dropout
     }
 
     # Create model
@@ -67,7 +69,6 @@ def get_trained_gcn():
     # Initialize session
     sess = tf.Session()
 
-
     # Define model evaluation function
     def evaluate(features, support, labels, mask, placeholders):
         t_test = time.time()
@@ -75,10 +76,11 @@ def get_trained_gcn():
         outs_val = sess.run([model.loss, model.accuracy], feed_dict=feed_dict_val)
         return outs_val[0], outs_val[1], (time.time() - t_test)
 
+    # Added this function to obtain softmax output
     def softmax(features, node_index):
         t_test = time.time()
         feed_dict_val = construct_feed_dict(features, support, y_train, train_mask, placeholders)
-        all_softamx_output, _, _ = sess.run([model.softmax_ouput,model.loss, model.accuracy], feed_dict=feed_dict_val)
+        all_softamx_output, _, _ = sess.run([model.softmax_ouput, model.loss, model.accuracy], feed_dict=feed_dict_val)
         return all_softamx_output[node_index]
 
     # Init variables
@@ -102,11 +104,11 @@ def get_trained_gcn():
         cost_val.append(cost)
         if VERBOSE:
             # Print results
-            print("Epoch:", '%04d' % (epoch + 1), "train_loss=", "{:.5f}".format(outs[1]),
-                "train_acc=", "{:.5f}".format(outs[2]), "val_loss=", "{:.5f}".format(cost),
-                "val_acc=", "{:.5f}".format(acc), "time=", "{:.5f}".format(time.time() - t))
+            print("Epoch:", '%04d' % (epoch + 1), "train_loss=", "{:.5f}".format(outs[1]), "train_acc=",
+                  "{:.5f}".format(outs[2]), "val_loss=", "{:.5f}".format(cost), "val_acc=", "{:.5f}".format(acc),
+                  "time=", "{:.5f}".format(time.time() - t))
 
-        if epoch > FLAGS.early_stopping and cost_val[-1] > np.mean(cost_val[-(FLAGS.early_stopping+1):-1]):
+        if epoch > FLAGS.early_stopping and cost_val[-1] > np.mean(cost_val[-(FLAGS.early_stopping + 1):-1]):
             print("Early stopping...")
             break
 
@@ -114,7 +116,7 @@ def get_trained_gcn():
 
     # Testing
     test_cost, test_acc, test_duration = evaluate(features, support, y_test, test_mask, placeholders)
-    print("Test set results:", "cost=", "{:.5f}".format(test_cost),
-        "accuracy=", "{:.5f}".format(test_acc), "time=", "{:.5f}".format(test_duration))
+    print("Test set results:", "cost=", "{:.5f}".format(test_cost), "accuracy=", "{:.5f}".format(test_acc), "time=",
+          "{:.5f}".format(test_duration))
 
     return sess, FLAGS, softmax

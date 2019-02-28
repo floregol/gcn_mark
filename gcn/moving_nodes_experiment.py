@@ -19,7 +19,9 @@ sess, FLAGS, softmax = get_trained_gcn()
 result_folder = "results"
 # Get features and labels
 adj, initial_features, y_train, y_val, y_test, train_mask, val_mask, test_mask, labels = load_data(FLAGS.dataset)
-
+train_index = np.argwhere(train_mask).flatten()
+val_index = np.argwhere(val_mask).flatten()
+test_index = np.argwhere(test_mask).flatten()
 features_sparse = preprocess_features(initial_features)
 feature_matrix = features_sparse.todense()
 number_nodes = feature_matrix.shape[0]
@@ -28,19 +30,24 @@ number_labels = labels.shape[1]
 # Experiment parameters.
 NUM_MOVED_NODES = 50
 
-SET = "val"  # val, train_labeled, train_unlabeled
+SET = "train_unlabeled"  # val, train_labeled, train_unlabeled
 if SET == "train_labeled":
-    set_index = np.argwhere(train_mask).flatten()
+    set_index = train_index
     result_folder += "/train_labeled"
 elif SET == "train_unlabeled":
-    pass
+    set_index = []
+    for i in range(number_nodes):
+        if i not in test_index and i not in val_index and i not in train_index:
+            set_index.append(i)
+    result_folder += "/train_unlabeled"
 elif SET == "val":
-    set_index = np.argwhere(val_mask).flatten()
+    set_index = val_index
     result_folder += "/val"
 elif SET == "test":
-    set_index = np.argwhere(test_mask).flatten()
+    set_index = test_index
     result_folder += "/test"
 
+print(set_index)
 list_moved_node = random.sample(list(set_index), NUM_MOVED_NODES)
 list_new_posititons = random.sample(range(number_nodes), 10)
 #list_new_posititons = range(number_nodes)

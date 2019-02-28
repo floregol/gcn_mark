@@ -6,7 +6,7 @@ from os import listdir
 from os.path import isfile, join
 
 
-def plot_softmax_output(node_index, node_true_label, softmax_output_list, label_list):
+def plot_softmax_output(plotPath, node_index, node_true_label, softmax_output_list, label_list):
 
     plt.figure()
 
@@ -19,18 +19,29 @@ def plot_softmax_output(node_index, node_true_label, softmax_output_list, label_
     ticks = [0, 1, 2, 3, 4, 5, 6]
     plt.xticks(range(len(ticks)), ticks)
     plt.title("Softmax Histogram for Node " + str(node_index) + " Label : " + str(node_true_label))
-    plt.savefig("plots/node_" + str(node_index) + "_label" + str(node_true_label) + ".png")
+    plt.savefig(plotPath + "node_" + str(node_index) + "_label" + str(node_true_label) + ".png")
 
 
-mypath = 'results/'
+SET = "val"  # val, train_labeled, train_unlabeled
+if SET == "train_labeled":
+    mypath = 'results/train_label/'
+    plotPath = 'plots/train_label/'
+elif SET == "train_unlabeled":
+    pass
+elif SET == "val":
+    mypath = 'results/val/'
+    plotPath = 'plots/val/'
+elif SET == "test":
+    mypath = 'results/test/'
+    plotPath = 'plots/test/'
 onlyfiles = [f for f in listdir(mypath) if isfile(join(mypath, f))]
 
 for node_files in onlyfiles:
-    with open("results/" + node_files, 'rb') as f:
+    with open(mypath + node_files, 'rb') as f:
         stats_dict = pk.load(f, encoding='latin1')
 
     node_index = stats_dict["node"]
     node_true_label = stats_dict["node_label"]
     softmax_output_list = stats_dict["softmax"]
     label_list = stats_dict["label_list"]
-    plot_softmax_output(node_index, node_true_label, softmax_output_list, label_list)
+    plot_softmax_output(plotPath, node_index, node_true_label, softmax_output_list, label_list)

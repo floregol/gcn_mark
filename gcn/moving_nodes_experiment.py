@@ -18,8 +18,7 @@ import pickle as pk
 sess, FLAGS, softmax = get_trained_gcn()
 result_folder = "results"
 # Get features and labels
-_, initial_features, _, _, _, train_mask, _, _, labels = load_data(FLAGS.dataset)
-train_index = np.argwhere(train_mask).flatten()
+adj, initial_features, y_train, y_val, y_test, train_mask, val_mask, test_mask, labels = load_data(FLAGS.dataset)
 
 features_sparse = preprocess_features(initial_features)
 feature_matrix = features_sparse.todense()
@@ -28,9 +27,23 @@ number_labels = labels.shape[1]
 
 # Experiment parameters.
 NUM_MOVED_NODES = 50
-list_moved_node = random.sample(list(train_index), NUM_MOVED_NODES)
-#list_new_posititons = random.sample(range(number_nodes), 10)
-list_new_posititons = range(number_nodes)
+
+SET = "val"  # val, train_labeled, train_unlabeled
+if SET == "train_labeled":
+    set_index = np.argwhere(train_mask).flatten()
+    result_folder += "/train_labeled"
+elif SET == "train_unlabeled":
+    pass
+elif SET == "val":
+    set_index = np.argwhere(val_mask).flatten()
+    result_folder += "/val"
+elif SET == "test":
+    set_index = np.argwhere(test_mask).flatten()
+    result_folder += "/test"
+
+list_moved_node = random.sample(list(set_index), NUM_MOVED_NODES)
+list_new_posititons = random.sample(range(number_nodes), 10)
+#list_new_posititons = range(number_nodes)
 j = 0
 for node_index in list_moved_node:  # TODO in parrallel copy features matrix
     print(str(j) + "/" + str(len((list_moved_node))))

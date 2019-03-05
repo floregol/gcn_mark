@@ -19,7 +19,7 @@ import sys
 """
 
 # Train the GCN
-QUICK_MODE = True
+QUICK_MODE = False
 sess, FLAGS, softmax = get_trained_gcn(QUICK_MODE)
 result_folder = "results/classification"
 # Get features and labels
@@ -80,4 +80,4 @@ for node_index in nodes_to_classify:  # TODO in parrallel copy features matrix
 
 # Store data
 
-pk.dump(average_softmax_results, open(os.path.join(result_folder, "softmax.pk"), 'wb'))
+pk.dump(average_softmax_results, open(os.path.join(result_folder, "softmax" + sys.argv[1] + ".pk"), 'wb'))

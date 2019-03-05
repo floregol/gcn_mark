@@ -18,16 +18,19 @@ def plot_softmax_output(plotPath, node_index, node_true_label, softmax_output_li
     plt.axis([-0.5, 6.5, 0, 1])
     ticks = [0, 1, 2, 3, 4, 5, 6]
     plt.xticks(range(len(ticks)), ticks)
-    plt.title("Softmax Histogram for Node " + str(node_index) + " Label : " + str(node_true_label))
+    plt.xlabel("Classes")
+    plt.ylabel("Softmax Output")
+   # plt.title("Softmax Histogram for Node " + str(node_index) + " Label : " + str(node_true_label))
     plt.savefig(plotPath + "node_" + str(node_index) + "_label" + str(node_true_label) + ".png")
 
 
-SET = "val"  # val, train_labeled, train_unlabeled
+SET = "test"  # val, train_labeled, train_unlabeled
 if SET == "train_labeled":
-    mypath = 'results/train_label/'
-    plotPath = 'plots/train_label/'
+    mypath = 'results/train_labeled/'
+    plotPath = 'plots/train_labeled/'
 elif SET == "train_unlabeled":
-    pass
+    mypath = 'results/train_unlabeled/'
+    plotPath = 'plots/train_unlabeled/'
 elif SET == "val":
     mypath = 'results/val/'
     plotPath = 'plots/val/'

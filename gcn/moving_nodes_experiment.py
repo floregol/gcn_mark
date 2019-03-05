@@ -19,6 +19,7 @@ sess, FLAGS, softmax = get_trained_gcn()
 result_folder = "results"
 # Get features and labels
 adj, initial_features, y_train, y_val, y_test, train_mask, val_mask, test_mask, labels = load_data(FLAGS.dataset)
+
 train_index = np.argwhere(train_mask).flatten()
 val_index = np.argwhere(val_mask).flatten()
 test_index = np.argwhere(test_mask).flatten()
@@ -47,7 +48,6 @@ elif SET == "test":
     set_index = test_index
     result_folder += "/test"
 
-print(set_index)
 list_moved_node = random.sample(list(set_index), NUM_MOVED_NODES)
 list_new_posititons = random.sample(range(number_nodes), 10)
 #list_new_posititons = range(number_nodes)

@@ -11,6 +11,7 @@ from copy import copy, deepcopy
 import pickle as pk
 import multiprocessing as mp
 import math
+import sys
 """
 
  Moving the nodes around experiment
@@ -18,7 +19,7 @@ import math
 """
 
 # Train the GCN
-QUICK_MODE = False
+QUICK_MODE = True
 sess, FLAGS, softmax = get_trained_gcn(QUICK_MODE)
 result_folder = "results/classification"
 # Get features and labels
@@ -32,9 +33,9 @@ feature_matrix = features_sparse.todense()
 number_nodes = feature_matrix.shape[0]
 number_labels = labels.shape[1]
 
-nodes_to_classify = test_index
+nodes_to_classify = test_index[int(sys.argv[1]):int(sys.argv[2])]
 list_new_posititons = range(number_nodes)
-# list_new_posititons = random.sample(list(range(number_nodes)), 10)
+#list_new_posititons = random.sample(list(range(number_nodes)), 10)
 # nodes_to_classify = random.sample(list(test_index), 3)
 j = 0
 
@@ -78,4 +79,5 @@ for node_index in nodes_to_classify:  # TODO in parrallel copy features matrix
     average_softmax_results[node_index] = average_softmax_node
 
 # Store data
+
 pk.dump(average_softmax_results, open(os.path.join(result_folder, "softmax.pk"), 'wb'))

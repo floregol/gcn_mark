@@ -12,6 +12,9 @@ import pickle as pk
 import multiprocessing as mp
 import math
 import sys
+from sklearn.metrics import accuracy_score
+from scipy.stats import entropy
+import math
 """
 
  Moving the nodes around experiment
@@ -33,15 +36,39 @@ feature_matrix = features_sparse.todense()
 number_nodes = feature_matrix.shape[0]
 number_labels = labels.shape[1]
 
-nodes_to_classify = test_index[int(sys.argv[1]):int(sys.argv[2])]
+nodes_to_classify = test_index
 list_new_posititons = range(number_nodes)
 #list_new_posititons = random.sample(list(range(number_nodes)), 10)
 # nodes_to_classify = random.sample(list(test_index), 3)
 j = 0
 
 features = sparse_to_tuple(sparse.csr_matrix(feature_matrix))
-y_bar = np.mean(softmax(features, list_new_posititons), axis=0)
+softmax_output_test = softmax(features, test_index)
+print(softmax_output_test)
+print(softmax_output_test.shape)
 
+label_predictions = np.argmax(softmax_output_test, axis=1)
+label_ground_truth = np.argmax(labels[test_index, :], axis=1)
+
+print(accuracy_score(label_predictions, label_ground_truth))
+
+args_good = np.where(label_predictions == label_ground_truth)
+args_not = np.where(label_predictions != label_ground_truth)
+# print(args_good[0])
+# print(args_not[0])
+correct_softmax = softmax_output_test[args_good, :][0]
+
+not_correct_softmax = softmax_output_test[args_not, :][0]
+
+entropy_list = np.apply_along_axis(entropy, 1, correct_softmax)
+entropy_list_bad = np.apply_along_axis(entropy, 1, not_correct_softmax)
+max_entropy = math.log(7)
+print(np.mean(entropy_list) / max_entropy)
+print(np.mean(entropy_list_bad) / max_entropy)
+
+y_bar = np.mean(softmax(features, list_new_posititons), axis=0)
+print(y_bar)
+exit()
 average_softmax_results = np.zeros((number_nodes, number_labels))
 
 for node_index in nodes_to_classify:  # TODO in parrallel copy features matrix

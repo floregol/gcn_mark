@@ -44,31 +44,10 @@ j = 0
 
 features = sparse_to_tuple(sparse.csr_matrix(feature_matrix))
 softmax_output_test = softmax(features, test_index)
-print(softmax_output_test)
-print(softmax_output_test.shape)
-
-label_predictions = np.argmax(softmax_output_test, axis=1)
-label_ground_truth = np.argmax(labels[test_index, :], axis=1)
-
-print(accuracy_score(label_predictions, label_ground_truth))
-
-args_good = np.where(label_predictions == label_ground_truth)
-args_not = np.where(label_predictions != label_ground_truth)
-# print(args_good[0])
-# print(args_not[0])
-correct_softmax = softmax_output_test[args_good, :][0]
-
-not_correct_softmax = softmax_output_test[args_not, :][0]
-
-entropy_list = np.apply_along_axis(entropy, 1, correct_softmax)
-entropy_list_bad = np.apply_along_axis(entropy, 1, not_correct_softmax)
-max_entropy = math.log(7)
-print(np.mean(entropy_list) / max_entropy)
-print(np.mean(entropy_list_bad) / max_entropy)
 
 y_bar = np.mean(softmax(features, list_new_posititons), axis=0)
-print(y_bar)
-average_softmax_results = np.zeros((number_nodes, number_labels))
+
+softmax_results = np.zeros((number_nodes, len(list_new_posititons), number_labels))
 
 for node_index in nodes_to_classify:  # TODO in parrallel copy features matrix
 
@@ -78,8 +57,8 @@ for node_index in nodes_to_classify:  # TODO in parrallel copy features matrix
     node_true_label = int(np.argwhere(labels[node_index]))
     print(str(j) + "/" + str(len(nodes_to_classify)))
     # To store results
-    #softmax_output_list = np.zeros((len(list_new_posititons), number_labels))
-    classes_count = np.zeros((1, number_labels))
+    softmax_output_list = np.zeros((len(list_new_posititons), number_labels))
+    #classes_count = np.zeros((1, number_labels))
     label_list = []
     i = 0
 
@@ -95,16 +74,15 @@ for node_index in nodes_to_classify:  # TODO in parrallel copy features matrix
 
         features = sparse_to_tuple(sparse.csr_matrix(feature_matrix))
         softmax_output_of_node = softmax(features, new_spot)  # get new softmax output at this position
-        classes_count[0, np.argmax(softmax_output_of_node)] = classes_count[0, np.argmax(softmax_output_of_node)] + 1
-        #  softmax_output_list[i] = softmax_output_of_node  # Store results
+        # classes_count[0, np.argmax(softmax_output_of_node)] = classes_count[0, np.argmax(softmax_output_of_node)] + 1
+        softmax_output_list[i] = softmax_output_of_node  # Store results
         i += 1
         # print("put at " + str(replaced_node_label) + " = " + str(np.argmax(softmax_output_of_node)))
 
         feature_matrix[new_spot] = saved_features  # undo changes on the feature matrix
     j += 1
-    # average_softmax_node = np.mean(softmax_output_list, axis=0)
-    # average_softmax_results[node_index] = average_softmax_node
-    classes_results[node_index] = classes_count
+    softmax_results[node_index] = softmax_output_list
+    #classes_results[node_index] = classes_count
 
 # Store data
-pk.dump(classes_results, open(os.path.join(result_folder, "class" + sys.argv[1] + ".pk"), 'wb'))
+pk.dump(softmax_results, open(os.path.join(result_folder, "full" + sys.argv[1] + ".pk"), 'wb'))

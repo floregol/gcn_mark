@@ -35,7 +35,7 @@ def get_trained_gcn(QUICK_MODE=False):
     VERBOSE = False
     # Load data
     adj, initial_features, y_train, y_val, y_test, train_mask, val_mask, test_mask, _ = load_data(FLAGS.dataset)
-
+    
     # Some preprocessing
     features_sparse = preprocess_features(initial_features)
     features = sparse_to_tuple(features_sparse)
@@ -121,5 +121,9 @@ def get_trained_gcn(QUICK_MODE=False):
     test_cost, test_acc, test_duration = evaluate(features, support, y_test, test_mask, placeholders)
     print("Test set results:", "cost=", "{:.5f}".format(test_cost), "accuracy=", "{:.5f}".format(test_acc), "time=",
           "{:.5f}".format(test_duration))
-
-    return sess, FLAGS, softmax
+   
+   
+    w_0 = sess.run(model.vars['gcn/graphconvolution_1_vars/weights_0:0'])
+    w_1 = sess.run(model.vars['gcn/graphconvolution_2_vars/weights_0:0'])
+    A_tilde = support
+    return w_0, w_1, A_tilde, FLAGS, softmax

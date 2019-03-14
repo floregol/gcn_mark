@@ -129,9 +129,11 @@ def normalize_adj(adj):
     return adj.dot(d_mat_inv_sqrt).transpose().dot(d_mat_inv_sqrt).tocoo()
 
 
-def preprocess_adj(adj):
+def preprocess_adj(adj, dense=False):
     """Preprocessing of adjacency matrix for simple GCN model and conversion to tuple representation."""
     adj_normalized = normalize_adj(adj + sp.eye(adj.shape[0]))
+    if dense:
+        return adj_normalized.todense()
     return sparse_to_tuple(adj_normalized)
 
 

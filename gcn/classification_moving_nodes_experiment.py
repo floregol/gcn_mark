@@ -22,11 +22,32 @@ import math
 """
 
 # Train the GCN
-QUICK_MODE = False
-sess, FLAGS, softmax = get_trained_gcn(QUICK_MODE)
+QUICK_MODE = True
+w_0, w_1, A_tilde, FLAGS, old_softmax = get_trained_gcn(QUICK_MODE)
+
+A_index = A_tilde[0][0]
+A_values = A_tilde[0][1]
+A_shape = A_tilde[0][2]
 result_folder = "results/classification"
 # Get features and labels
 adj, initial_features, y_train, y_val, y_test, train_mask, val_mask, test_mask, labels = load_data(FLAGS.dataset)
+
+full_A_tilde = preprocess_adj(adj, True)
+
+
+def softmax(x):
+    return np.exp(x) / np.sum(np.exp(x), axis=1)
+
+
+def fast_localized_softmax(features, new_spot):
+    neighbors_index = np.argwhere(full_A_tilde[new_spot, :])[:, 1]
+    A_neig = full_A_tilde[neighbors_index, :]
+    H_out = np.matmul(np.matmul(A_neig, features), w_0)
+    relu_out = np.maximum(H_out, 0, H_out)
+    A_i_neigh = full_A_tilde[new_spot, neighbors_index]
+    H2_out = np.matmul(np.matmul(A_i_neigh, relu_out), w_1)
+    return softmax(H2_out)
+
 
 train_index = np.argwhere(train_mask).flatten()
 val_index = np.argwhere(val_mask).flatten()
@@ -36,16 +57,15 @@ feature_matrix = features_sparse.todense()
 number_nodes = feature_matrix.shape[0]
 number_labels = labels.shape[1]
 
-nodes_to_classify = test_index
-list_new_posititons = range(number_nodes)
-# list_new_posititons = random.sample(list(range(number_nodes)), 10)
-# nodes_to_classify = random.sample(list(test_index), 3)
+# nodes_to_classify = test_index
+# list_new_posititons = range(number_nodes)
+list_new_posititons = random.sample(list(range(number_nodes)), 100)
+nodes_to_classify = random.sample(list(test_index), 3)
 j = 0
 
 features = sparse_to_tuple(sparse.csr_matrix(feature_matrix))
-softmax_output_test = softmax(features, test_index)
 
-y_bar = np.mean(softmax(features, list_new_posititons), axis=0)
+start = time.time()
 
 softmax_results = np.zeros((number_nodes, len(list_new_posititons), number_labels))
 
@@ -72,8 +92,11 @@ for node_index in nodes_to_classify:  # TODO in parrallel copy features matrix
 
         feature_matrix[new_spot] = node_features  # move the node to the new position
 
-        features = sparse_to_tuple(sparse.csr_matrix(feature_matrix))
-        softmax_output_of_node = softmax(features, new_spot)  # get new softmax output at this position
+        #features = sparse_to_tuple(sparse.csr_matrix(feature_matrix))
+        softmax_output_of_node = fast_localized_softmax(feature_matrix,
+                                                        new_spot)  # get new softmax output at this position
+        # softmax_output_of_node = old_softmax(features,new_spot)
+
         # classes_count[0, np.argmax(softmax_output_of_node)] = classes_count[0, np.argmax(softmax_output_of_node)] + 1
         softmax_output_list[i] = softmax_output_of_node  # Store results
         i += 1
@@ -83,6 +106,7 @@ for node_index in nodes_to_classify:  # TODO in parrallel copy features matrix
     j += 1
     softmax_results[node_index] = softmax_output_list
     #classes_results[node_index] = classes_count
-
+end = time.time()
+print("fast " + str(end - start))
 # Store data
-pk.dump(softmax_results, open(os.path.join(result_folder, "full" + sys.argv[1] + ".pk"), 'wb'))
+#pk.dump(softmax_results, open(os.path.join(result_folder, "full" + sys.argv[1] + ".pk"), 'wb'))

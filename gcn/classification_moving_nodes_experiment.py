@@ -57,10 +57,10 @@ feature_matrix = features_sparse.todense()
 number_nodes = feature_matrix.shape[0]
 number_labels = labels.shape[1]
 
-# nodes_to_classify = test_index
-# list_new_posititons = range(number_nodes)
-list_new_posititons = random.sample(list(range(number_nodes)), 100)
-nodes_to_classify = random.sample(list(test_index), 3)
+nodes_to_classify = test_index[int(sys.argv[1]):int(sys.argv[2])]
+list_new_posititons = range(number_nodes)
+#list_new_posititons = random.sample(list(range(number_nodes)), 30)
+# nodes_to_classify = random.sample(list(test_index), 3)
 j = 0
 old_soft = np.zeros((2708, 7))
 for i in range(number_nodes):
@@ -69,7 +69,7 @@ for i in range(number_nodes):
     old_soft[i] = fast_localized_softmax(feature_matrix, i)
     feature_matrix[i] = saved_features
 pk.dump(old_soft, open(os.path.join(result_folder, "initial_neigh.pk"), 'wb'))
-exit()
+
 start = time.time()
 
 softmax_results = np.zeros((number_nodes, len(list_new_posititons), number_labels))
@@ -111,7 +111,6 @@ for node_index in nodes_to_classify:  # TODO in parrallel copy features matrix
     j += 1
     softmax_results[node_index] = softmax_output_list
     #classes_results[node_index] = classes_count
-end = time.time()
-print("fast " + str(end - start))
+
 # Store data
 pk.dump(softmax_results, open(os.path.join(result_folder, "full" + sys.argv[1] + ".pk"), 'wb'))

@@ -126,4 +126,5 @@ def get_trained_gcn(QUICK_MODE=False):
     w_0 = sess.run(model.vars['gcn/graphconvolution_1_vars/weights_0:0'])
     w_1 = sess.run(model.vars['gcn/graphconvolution_2_vars/weights_0:0'])
     A_tilde = support
+    
     return w_0, w_1, A_tilde, FLAGS, softmax

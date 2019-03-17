@@ -22,7 +22,7 @@ import math
 """
 
 # Train the GCN
-QUICK_MODE = True
+QUICK_MODE = False
 w_0, w_1, A_tilde, FLAGS, old_softmax = get_trained_gcn(QUICK_MODE)
 
 A_index = A_tilde[0][0]
@@ -62,9 +62,14 @@ number_labels = labels.shape[1]
 list_new_posititons = random.sample(list(range(number_nodes)), 100)
 nodes_to_classify = random.sample(list(test_index), 3)
 j = 0
-
-features = sparse_to_tuple(sparse.csr_matrix(feature_matrix))
-
+old_soft = np.zeros((2708, 7))
+for i in range(number_nodes):
+    saved_features = deepcopy(feature_matrix[i])  # save replaced node features to do everything in place (memory)
+    feature_matrix[i] = np.zeros((1, 1433))  # move the node to the new position
+    old_soft[i] = fast_localized_softmax(feature_matrix, i)
+    feature_matrix[i] = saved_features
+pk.dump(old_soft, open(os.path.join(result_folder, "initial_neigh.pk"), 'wb'))
+exit()
 start = time.time()
 
 softmax_results = np.zeros((number_nodes, len(list_new_posititons), number_labels))
@@ -109,4 +114,4 @@ for node_index in nodes_to_classify:  # TODO in parrallel copy features matrix
 end = time.time()
 print("fast " + str(end - start))
 # Store data
-#pk.dump(softmax_results, open(os.path.join(result_folder, "full" + sys.argv[1] + ".pk"), 'wb'))
+pk.dump(softmax_results, open(os.path.join(result_folder, "full" + sys.argv[1] + ".pk"), 'wb'))

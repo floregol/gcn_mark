@@ -71,7 +71,17 @@ for train_index, test_index in test_split.split(labels, labels):
         # neigh_average = np.mean(initial_neighbors_y, axis=0)
         # initial_neighbors_log = np.log(initial_neighbors_y)
         # initial_neigh_log_avg = np.mean(initial_neighbors_log, axis=0)
+        def log_odds_ratio(v):
+            p_max = v[np.argsort(v)[-1]]
+            p_second_max = v[np.argsort(v)[-2]]
+            return np.log((p_max * (1 - p_second_max)) / ((1 - p_max) * p_second_max))
 
+
+        log_odds_ratio_gcn = np.apply_along_axis(log_odds_ratio, 1, initial_gcn)
+
+        score = np.array(log_odds_ratio_gcn[test_index])
+
+        threshold = np.mean(score)
         score = np.array(score_percent_similar(test_index, full_pred_gcn, A))
         nodes_to_reclassify = test_index[np.argwhere(score < THRESHOLD)]
         scores_reclassify = score[np.argwhere(score < THRESHOLD)]

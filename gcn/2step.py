@@ -36,11 +36,12 @@ onlyfiles.remove(intitial_gcn_neighbors_files)
 onlyfiles.remove(intitial_gcn_files)
 onlyfiles.remove(classifier_avg_softmax_file)
 onlyfiles.remove(classifier_avg_wei_softmax_file)
-
+dataset = 'cora'
+adj, initial_features,y_train, y_val, y_test, train_mask, val_mask, test_mask,labels = load_data(dataset)
 # Train the GCN
 QUICK_MODE = False
-w_0, w_1, A_tilde, FLAGS, old_soft, adj, initial_features, y_train, y_val, y_test, train_mask, val_mask, test_mask, labels = get_trained_gcn(
-    422, QUICK_MODE)
+w_0, w_1, A_tilde, old_soft = get_trained_gcn(324, dataset, y_train, y_val, y_test, train_mask, val_mask,
+                                                      test_mask)
 
 A = adj.todense()
 full_A_tilde = preprocess_adj(adj, True)
@@ -72,11 +73,19 @@ def percent_similar(list_nodes):
 
     return percent_predicted_similar
 
+def log_odds_ratio(v):
+    p_max = v[np.argsort(v)[-1]]
+    p_second_max = v[np.argsort(v)[-2]]
+    return np.log((p_max * (1 - p_second_max)) / ((1 - p_max) * p_second_max))
 
-score = np.array(percent_similar(test_index))
 
-nodes_to_reclassify = test_index[np.argwhere(score < 0.5)]
-scores_reclassify = score[np.argwhere(score < 0.5)]
+log_odds_ratio_gcn = np.apply_along_axis(log_odds_ratio, 1, initial_gcn)
+
+score = np.array(log_odds_ratio_gcn[test_index])
+
+threshold = np.mean(score)
+nodes_to_reclassify = test_index[np.argwhere(score < threshold)]
+scores_reclassify = score[np.argwhere(score < threshold)]
 print(nodes_to_reclassify.shape)
 
 start_test_index = 1708

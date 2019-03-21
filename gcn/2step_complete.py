@@ -24,9 +24,10 @@ from helper import *
 """
 NUM_CROSS_VAL = 4
 trials = 2
+CORES = 4
 # Train the GCN
 SEED = 43
-initial_num_labels = 20
+initial_num_labels = 5
 THRESHOLD = 0.5
 dataset = 'cora'
 adj, initial_features, _, _, _, _, _, _, labels = load_data(dataset)
@@ -38,7 +39,7 @@ feature_matrix = features_sparse.todense()
 n = feature_matrix.shape[0]
 number_labels = labels.shape[1]
 
-list_new_posititons = random.sample(list(range(n)), 30)
+list_new_posititons = random.sample(list(range(n)), 500)
 #list_new_posititons = range(n)
 
 test_split = StratifiedShuffleSplit(n_splits=NUM_CROSS_VAL, test_size=0.37, random_state=SEED)
@@ -76,7 +77,6 @@ for train_index, test_index in test_split.split(labels, labels):
             p_second_max = v[np.argsort(v)[-2]]
             return np.log((p_max * (1 - p_second_max)) / ((1 - p_max) * p_second_max))
 
-
         log_odds_ratio_gcn = np.apply_along_axis(log_odds_ratio, 1, initial_gcn)
 
         score = np.array(log_odds_ratio_gcn[test_index])
@@ -87,6 +87,7 @@ for train_index, test_index in test_split.split(labels, labels):
         scores_reclassify = score[np.argwhere(score < THRESHOLD)]
         print(nodes_to_reclassify.shape)
         j = 0
+
         for node_index in nodes_to_reclassify:  # TODO in parrallel copy features matrix
 
             node_features = deepcopy(feature_matrix[node_index])
@@ -94,56 +95,70 @@ for train_index, test_index in test_split.split(labels, labels):
 
             node_true_label = ground_truth[node_index]
             node_thinking_label = full_pred_gcn[node_index]
+
+            def move_node(list_new_posititons, feature_matrix, softmax_output_list, number_labels, full_A_tilde, w_0,
+                          w_1, node_features):
+                i = 0
+                softmax_output_list = np.zeros((len(list_new_posititons), number_labels))
+                for new_spot in list_new_posititons:
+                    saved_features = deepcopy(
+                        feature_matrix[new_spot])  # save replaced node features to do everything in place (memory)
+
+                    feature_matrix[new_spot] = node_features  # move the node to the new position
+
+                    softmax_output_of_node = fast_localized_softmax(feature_matrix, new_spot, full_A_tilde, w_0,
+                                                                    w_1)  # get new softmax output at this position
+
+                    softmax_output_list[i] = softmax_output_of_node  # Store results
+                    i += 1
+                    # print("put at " + str(replaced_node_label) + " = " + str(np.argmax(softmax_output_of_node)))
+
+                    feature_matrix[new_spot] = saved_features  # undo changes on the feature matrix
+                return softmax_output_list
+
             #To store results
             softmax_output_list = np.zeros((len(list_new_posititons), number_labels))
+            partition_size = int(len(list_new_posititons) / CORES)
+            start_index = list(range(0, len(list_new_posititons), partition_size))
+            end_index = [i for i in start_index[1:]]
+            end_index.append(len(list_new_posititons))
+            splited_list = [ list(list_new_posititons[start_index[i]:end_index[i]]) for i in range(CORES)]
+            
+            softmax_output_lists = [np.zeros((len(i), number_labels)) for i in splited_list]
+            pool = mp.Pool(processes=CORES)
+            pool_results = [
+                pool.apply_async(move_node, (splited_list[i], feature_matrix, softmax_output_lists[i], number_labels,
+                                             full_A_tilde, w_0, w_1, node_features)) for i in range(CORES)
+            ]
+            pool.close()
+            pool.join()
+            i_results = 0
 
-            label_list = []
-            i = 0
+            for pr in pool_results:
+                thread_results = pr.get()
+                softmax_output_list[start_index[i_results]: end_index[i_results]] = thread_results
 
-            for new_spot in list_new_posititons:
-
-                replaced_node_label = int(np.argwhere(labels[new_spot]))
-                label_list.append(replaced_node_label)  # to keep track of the label of the replaced node
-
-                saved_features = deepcopy(
-                    feature_matrix[new_spot])  # save replaced node features to do everything in place (memory)
-
-                feature_matrix[new_spot] = node_features  # move the node to the new position
-
-                softmax_output_of_node = fast_localized_softmax(feature_matrix, new_spot, full_A_tilde, w_0,
-                                                                w_1)  # get new softmax output at this position
-
-                softmax_output_list[i] = softmax_output_of_node  # Store results
-                i += 1
-                # print("put at " + str(replaced_node_label) + " = " + str(np.argmax(softmax_output_of_node)))
-
-                feature_matrix[new_spot] = saved_features  # undo changes on the feature matrix
-
-            all_output_for_node = softmax_output_list
-            node_true_label = ground_truth[i]
-            node_thinking_label = full_pred_gcn[i]
-
-            y_bar_x = np.mean(all_output_for_node, axis=0)
-
+            y_bar_x = np.mean(softmax_output_list, axis=0)
+            print(j)
             new_label = np.argmax(y_bar_x, axis=0)
-            neighbors_labels = full_pred_gcn[np.argwhere(A[i])[:, 1]]
+            neighbors_labels = full_pred_gcn[np.argwhere(A[node_index])[:, 1]]
             similar_neighbors = np.where(neighbors_labels == new_label)[0].shape[0]
             num_neighbors = neighbors_labels.shape[0]
 
             if similar_neighbors / num_neighbors > scores_reclassify[j]:
-                new_pred_soft[i] = new_label
-                print(str(node_true_label) + " pred " + str(node_thinking_label) + " new : " + str(new_label))
+                new_pred_soft[node_index] = new_label
+            # print(str(node_true_label) + " pred " + str(node_thinking_label) + " new : " + str(new_label))
 
             y_bar_x = y_bar_x - initial_avergae
 
             new_label = np.argmax(y_bar_x, axis=0)
-            neighbors_labels = full_pred_gcn[np.argwhere(A[i])[:, 1]]
+            neighbors_labels = full_pred_gcn[np.argwhere(A[node_index])[:, 1]]
             similar_neighbors = np.where(neighbors_labels == new_label)[0].shape[0]
             num_neighbors = neighbors_labels.shape[0]
 
             if similar_neighbors / num_neighbors > scores_reclassify[j]:
-                new_pred_wei_soft[i] = new_label
-                print(str(node_true_label) + " pred " + str(node_thinking_label) + " new : " + str(new_label))
+                new_pred_wei_soft[node_index] = new_label
+                #print(str(node_true_label) + " pred " + str(node_thinking_label) + " new : " + str(new_label))
 
             # log_all_output_for_node = np.log(all_output_for_node)
             # b = log_all_output_for_node - initial_neighbors_log
